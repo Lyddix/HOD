@@ -35,6 +35,7 @@ const useIsMobile = () => {
 export default function CasinoModal({ casino, onClose }: CasinoModalProps) {
   const { isMobile, isClient } = useIsMobile()
   const [imagesLoaded, setImagesLoaded] = useState(false)
+  const [imageRendered, setImageRendered] = useState(false)
   const [loadingError, setLoadingError] = useState(false)
   const casinoColor = casino.borderColor || '#FCB83B'
   const casinoGlowColor = casino.glowColor || 'rgba(252,184,59,0.6)'
@@ -57,26 +58,36 @@ export default function CasinoModal({ casino, onClose }: CasinoModalProps) {
   // Reset loading state when casino changes
   useEffect(() => {
     setImagesLoaded(false)
+    setImageRendered(false)
     setLoadingError(false)
   }, [casino])
 
-  // Preload images
+  // Preload images - preload both banners to ensure they're ready (especially important for PNGs)
   useEffect(() => {
     if (!casino) return
 
-    // Use banner2 for desktop, banner1 for mobile (or fallback to banner1)
-    const imagesToLoad = isMobile ? [casino.banner1] : [casino.banner2 || casino.banner1]
+    // Preload both banners to ensure they're cached, especially important for slower-loading PNGs
+    const imagesToLoad: string[] = []
+    if (casino.banner1) imagesToLoad.push(casino.banner1)
+    if (casino.banner2) imagesToLoad.push(casino.banner2)
+    
+    // If no banners, still allow modal to show
+    if (imagesToLoad.length === 0) {
+      setImagesLoaded(true)
+      return
+    }
+
     let loadedCount = 0
-    let errorOccurred = false
+    let errorCount = 0
+    const totalImages = imagesToLoad.length
 
     const checkAllLoaded = () => {
-      if (errorOccurred) {
-        setLoadingError(true)
-        setImagesLoaded(true) // Still show modal even with error
-        return
-      }
-      if (loadedCount === imagesToLoad.length) {
-        setImagesLoaded(true)
+      // Only proceed if at least one image loaded successfully, or all failed
+      if (loadedCount > 0 || errorCount === totalImages) {
+        // Small delay to ensure image is fully decoded (especially for PNGs)
+        setTimeout(() => {
+          setImagesLoaded(true)
+        }, 50)
       }
     }
 
@@ -87,12 +98,18 @@ export default function CasinoModal({ casino, onClose }: CasinoModalProps) {
         checkAllLoaded()
       }
       img.onerror = () => {
-        errorOccurred = true
-        checkAllLoaded()
+        errorCount++
+        // If this was the only image and it failed, still show modal
+        if (errorCount === totalImages && loadedCount === 0) {
+          setLoadingError(true)
+          setImagesLoaded(true)
+        } else {
+          checkAllLoaded()
+        }
       }
       img.src = src
     })
-  }, [casino, isMobile])
+  }, [casino])
 
   const renderStars = (rating: number) => {
     const fullStars = Math.floor(rating)
@@ -120,7 +137,7 @@ export default function CasinoModal({ casino, onClose }: CasinoModalProps) {
     )
   }
 
-  // Show loading state
+  // Show loading state until preload is complete
   if (!imagesLoaded) {
     return (
       <div className="fixed inset-0 z-50 flex justify-center items-center bg-black/70" onClick={onClose}>
@@ -179,7 +196,25 @@ export default function CasinoModal({ casino, onClose }: CasinoModalProps) {
                 </div>
               </div>
             ) : (
-              <Image src={casino.banner1} alt={`${casino.name} banner`} fill className="w-full h-full object-contain" />
+              <>
+                {!imageRendered && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-700 to-primary-800 flex items-center justify-center z-10">
+                    <LoadingSpinner color={casinoColor} />
+                  </div>
+                )}
+                <Image 
+                  src={casino.banner1} 
+                  alt={`${casino.name} banner`} 
+                  fill 
+                  className={`w-full h-full object-contain transition-opacity duration-300 ${imageRendered ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => setImageRendered(true)}
+                  onError={() => {
+                    setLoadingError(true)
+                    setImageRendered(true)
+                  }}
+                  priority
+                />
+              </>
             )}
           </div>
           <div className="p-4 flex flex-col flex-1" style={{ background: 'radial-gradient(ellipse at center, #0f0f0f 0%, #1a1a1a 40%, #0f0f0f 80%, #050505 100%)' }}>
@@ -278,7 +313,25 @@ export default function CasinoModal({ casino, onClose }: CasinoModalProps) {
                 </div>
               </div>
             ) : (
-              <Image src={casino.banner2 || casino.banner1} alt={`${casino.name} banner`} fill className="w-full h-full object-contain" />
+              <>
+                {!imageRendered && (
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-700 to-primary-800 flex items-center justify-center z-10">
+                    <LoadingSpinner color={casinoColor} />
+                  </div>
+                )}
+                <Image 
+                  src={casino.banner2 || casino.banner1} 
+                  alt={`${casino.name} banner`} 
+                  fill 
+                  className={`w-full h-full object-contain transition-opacity duration-300 ${imageRendered ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => setImageRendered(true)}
+                  onError={() => {
+                    setLoadingError(true)
+                    setImageRendered(true)
+                  }}
+                  priority
+                />
+              </>
             )}
           </div>
         </div>

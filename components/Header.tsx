@@ -26,7 +26,7 @@ export default function Header() {
           >
             <Link href="/">
               <img 
-                src="/logo.png" 
+                src="/Logo.png" 
                 alt="House of Degens Logo" 
                 className="h-10 md:h-12 w-auto"
               />
