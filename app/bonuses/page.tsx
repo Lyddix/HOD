@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import Header from '@/components/Header'
@@ -11,7 +11,7 @@ import PageBanner from '@/components/PageBanner'
 import { Casino } from '@/types/casino'
 import { placeholderCasinos } from '@/components/CasinoGrid'
 
-export default function BonusesPage() {
+function BonusesPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedCasino, setSelectedCasino] = useState<Casino | null>(null)
@@ -93,6 +93,25 @@ export default function BonusesPage() {
         <CasinoModal casino={selectedCasino} onClose={handleCloseModal} />
       )}
     </main>
+  )
+}
+
+export default function BonusesPage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-complex relative overflow-hidden">
+        <div className="relative z-10">
+          <Header />
+          <PageBanner 
+            title="CASINO BONUSES" 
+            subtitle="Explore the best casino bonuses, exclusive offers, and promo codes handpicked for you."
+            icon="bonuses"
+          />
+        </div>
+      </main>
+    }>
+      <BonusesPageContent />
+    </Suspense>
   )
 }
 

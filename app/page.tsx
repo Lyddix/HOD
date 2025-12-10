@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Header from '@/components/Header'
 import HeaderBanner from '@/components/HeaderBanner'
@@ -17,7 +17,7 @@ import { placeholderCasinos } from '@/components/CasinoGrid'
 import KickLivePopupHome from '@/components/KickLivePopupHome'
 import { useKickLivePopup } from '@/components/KickLivePopup'
 
-export default function Home() {
+function HomeContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [selectedCasino, setSelectedCasino] = useState<Casino | null>(null)
@@ -536,6 +536,32 @@ export default function Home() {
         <CasinoModal casino={selectedCasino} onClose={handleCloseModal} />
       )}
     </main>
+  )
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen bg-complex relative overflow-hidden">
+        <div className="relative z-10">
+          <Header />
+          <div className="relative h-[200px] md:h-[450px]">
+            <div className="absolute inset-0">
+              <div className="relative w-full h-full overflow-hidden">
+                <WebBanner />
+                <div className="absolute top-12 md:top-24 bottom-0 left-0 right-0 z-10 flex items-center justify-center">
+                  <div className="w-full h-full flex items-center justify-center">
+                    <HeaderBanner />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    }>
+      <HomeContent />
+    </Suspense>
   )
 }
 
